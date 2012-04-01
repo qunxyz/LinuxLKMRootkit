@@ -1,6 +1,11 @@
 Linux rootkit, working in 3.2.11 on arch
+
+I started to make this becuase there is very little about writing malicious kernel modules online and especially nothing for later kernels.
+Lots of information came from reading the enye rootkit (http://www.ossec.net/rootkits/enye-sec.php)
+
 This is a loadable kernel module, use at your own risk, can crash your system.
 I will not provide instructions for use, if you don't know what you're doing, you shouldn't be using this.
+This is also not permanent, post reboot it is no longer loaded I do not intend to change this for the forseeable future.
 Functions:
     - Give a caller root privs by calling kill with pid 12345 and sig 58
     - Hides self from lsmod (currently turned off)
