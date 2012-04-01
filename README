@@ -1,0 +1,14 @@
+Linux rootkit, working in 3.2.11 on arch
+This is a loadable kernel module, use at your own risk, can crash your system.
+I will not provide instructions for use, if you don't know what you're doing, you shouldn't be using this.
+Functions:
+    - Give a caller root privs by calling kill with pid 12345 and sig 58
+    - Hides self from lsmod (currently turned off)
+    - Hides files from a list (incomplete)
+Low level capabilities:
+    - Find syscall table
+    - Hijack syscall functions
+
+!!!!!!!
+THIS ROOTKIT IS NOT COMPLETE YET
+!!!!!!!
