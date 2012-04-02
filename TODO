@@ -1,4 +1,6 @@
 X   make syscall table RW
 X   hook syscalls like kill for setuid
     hook syscalls for hiding + *64
+    hide file/folder by gid
     add remote login listener + hiding
+    add persistence across kernel versions (init.d/rc.d script?)
