@@ -1,3 +1,4 @@
 X   make syscall table RW
-X   hook syscalls like kill for setuid, see other rootkit
-    hook syscalls for hiding
+X   hook syscalls like kill for setuid
+    hook syscalls for hiding + *64
+    add remote login listener + hiding
