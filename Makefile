@@ -2,9 +2,10 @@ obj-m	:= lkm.o
 
 KDIR	:= /lib/modules/$(shell uname -r)/build
 PWD	:= $(shell pwd)
+EXTRA_CFLAGS := -ggdb
 
 default:
-	$(MAKE) -C $(KDIR) SUBDIRS=$(PWD) modules
+	$(MAKE) -C $(KDIR) -Wall SUBDIRS=$(PWD) modules
 clean:
 	rm *.o modules.order Module.symvers lkm.mod.c .*.cmd
 load:

